@@ -273,10 +273,11 @@ class ChannelDLApp(ctk.CTk):
 
                 self.ytdlp_process.wait()
                 
-                # Dọn ảnh trùng
+                # Dọn ảnh trùng: xóa mọi thứ không phải video
                 try:
+                    video_exts = ('.mp4','.mkv','.avi','.mov','.webm','.flv','.wmv')
                     for f in os.listdir(video_dir):
-                        if f.lower().endswith(('.jpg','.jpeg','.png','.webp')):
+                        if not f.lower().endswith(video_exts):
                             os.remove(os.path.join(video_dir, f))
                 except: pass
 
