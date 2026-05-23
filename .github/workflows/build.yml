@@ -1,0 +1,173 @@
+name: Build Channel Downloader
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag'
+        required: false
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Download FFmpeg
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "ffmpeg.zip"
+          Expand-Archive -Path "ffmpeg.zip" -DestinationPath "."
+          $dir = Get-ChildItem -Directory "ffmpeg-*" | Select-Object -First 1
+          Copy-Item "$($dir.FullName)/bin/ffmpeg.exe" "ffmpeg.exe"
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --onefile --windowed `
+            --name "ChannelDL" `
+            --add-data "ffmpeg.exe;." `
+            --collect-all "customtkinter" `
+            --collect-all "yt_dlp" `
+            --hidden-import "yt_dlp" `
+            --hidden-import "yt_dlp.extractor" `
+            --noconfirm `
+            app.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChannelDL-Windows
+          path: dist/ChannelDL.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Install FFmpeg
+        run: brew install ffmpeg
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --onefile --windowed `
+            --name "ChannelDL" `
+            --collect-all "customtkinter" `
+            --collect-all "yt_dlp" `
+            --hidden-import "yt_dlp" `
+            --hidden-import "yt_dlp.extractor" `
+            --noconfirm `
+            app.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChannelDL-macOS
+          path: dist/ChannelDL
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq python3-tk ffmpeg
+
+      - name: Install Python deps
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --onefile --windowed `
+            --name "ChannelDL" `
+            --collect-all "customtkinter" `
+            --collect-all "yt_dlp" `
+            --hidden-import "yt_dlp" `
+            --hidden-import "yt_dlp.extractor" `
+            --noconfirm `
+            app.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChannelDL-Linux
+          path: dist/ChannelDL
+
+  release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Channel Downloader ${{ github.ref_name }}"
+          body: |
+            ## 🎬 Channel Downloader GUI ${{ github.ref_name }}
+
+            ### Tính năng:
+            - ✅ Tải toàn bộ video từ kênh YouTube / TikTok
+            - ✅ Tự động chọn chất lượng cao nhất (best video + audio → MP4)
+            - ✅ Nhúng metadata + thumbnail vào file
+            - ✅ Bỏ qua video đã tải (archive)
+            - ✅ Giới hạn số lượng, lọc theo ngày
+            - ✅ Progress bar + log real-time
+
+            ### 📥 Tải về:
+            - 🪟 **Windows**: `ChannelDL.exe`
+            - 🍎 **macOS**: `ChannelDL`
+            - 🐧 **Linux**: `ChannelDL`
+
+            ### Hướng dẫn:
+            - **Windows**: Chạy file ChannelDL.exe (có sẵn FFmpeg bên trong)
+            - **macOS**: `chmod +x ChannelDL && ./ChannelDL` (cần cài FFmpeg: `brew install ffmpeg`)
+            - **Linux**: `chmod +x ChannelDL && ./ChannelDL` (cần cài: `sudo apt install ffmpeg python3-tk`)
+          files: |
+            artifacts/ChannelDL-Windows/ChannelDL.exe
+            artifacts/ChannelDL-macOS/ChannelDL
+            artifacts/ChannelDL-Linux/ChannelDL
+          draft: true
+          prerelease: false
