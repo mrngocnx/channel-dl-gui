@@ -37,14 +37,14 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile --windowed `
-            --name "ChannelDL" `
-            --add-data "ffmpeg.exe;." `
-            --collect-all "customtkinter" `
-            --collect-all "yt_dlp" `
-            --hidden-import "yt_dlp" `
-            --hidden-import "yt_dlp.extractor" `
-            --noconfirm `
+          pyinstaller --onefile --windowed \
+            --name "ChannelDL" \
+            --add-data "ffmpeg.exe;." \
+            --collect-all "customtkinter" \
+            --collect-all "yt_dlp" \
+            --hidden-import "yt_dlp" \
+            --hidden-import "yt_dlp.extractor" \
+            --noconfirm \
             app.py
 
       - name: Upload artifact
@@ -74,13 +74,13 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile --windowed `
-            --name "ChannelDL" `
-            --collect-all "customtkinter" `
-            --collect-all "yt_dlp" `
-            --hidden-import "yt_dlp" `
-            --hidden-import "yt_dlp.extractor" `
-            --noconfirm `
+          pyinstaller --onefile --windowed \
+            --name "ChannelDL" \
+            --collect-all "customtkinter" \
+            --collect-all "yt_dlp" \
+            --hidden-import "yt_dlp" \
+            --hidden-import "yt_dlp.extractor" \
+            --noconfirm \
             app.py
 
       - name: Upload artifact
@@ -112,13 +112,13 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile --windowed `
-            --name "ChannelDL" `
-            --collect-all "customtkinter" `
-            --collect-all "yt_dlp" `
-            --hidden-import "yt_dlp" `
-            --hidden-import "yt_dlp.extractor" `
-            --noconfirm `
+          pyinstaller --onefile --windowed \
+            --name "ChannelDL" \
+            --collect-all "customtkinter" \
+            --collect-all "yt_dlp" \
+            --hidden-import "yt_dlp" \
+            --hidden-import "yt_dlp.extractor" \
+            --noconfirm \
             app.py
 
       - name: Upload artifact
@@ -157,10 +157,9 @@ jobs:
             - ✅ Progress bar + log real-time
 
             ### 📥 Tải về:
-            - 🪟 **Windows**: `ChannelDL.exe`
-            - 🍎 **macOS**: `ChannelDL`
-            - 🐧 **Linux**: `ChannelDL`
-
+            - 🪟 **Windows**: `ChannelDL.exe \
+            - 🍎 **macOS**: `ChannelDL \
+            - 🐧 **Linux**: `ChannelDL \
             ### Hướng dẫn:
             - **Windows**: Chạy file ChannelDL.exe (có sẵn FFmpeg bên trong)
             - **macOS**: `chmod +x ChannelDL && ./ChannelDL` (cần cài FFmpeg: `brew install ffmpeg`)
