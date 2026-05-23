@@ -33,12 +33,7 @@ ctk.set_default_color_theme(COLOR_THEME)
 # ─────────────────────────── LINH THÚ HỖ TRỢ ───────────────────────────
 def get_ytdlp_cmd():
     """Gọi yt-dlp — linh phù vạn năng"""
-    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-        ytdlp_main = os.path.join(sys._MEIPASS, 'yt_dlp', '__main__.py')
-        if os.path.exists(ytdlp_main):
-            return [sys.executable, ytdlp_main]
-        return ['yt-dlp']
-    return [sys.executable, '-m', 'yt_dlp']
+    return ['yt-dlp']
 
 
 def get_ffmpeg_path():
@@ -260,13 +255,31 @@ class ChannelDLApp(ctk.CTk):
         def run():
             try:
                 limit_num = 5
-                ytdlp_cmd = get_ytdlp_cmd()
-                args = ytdlp_cmd + [
-                    "--flat-playlist", "--dump-json",
-                    "--playlist-end", str(limit_num),
-                    url
-                ]
-                result = subprocess.run(args, capture_output=True, text=True, timeout=30)
+                import yt_dlp
+                ydl_opts = {
+                    'quiet': True,
+                    'extract_flat': True,
+                    'dump_single_json': True,
+                    'playlistend': limit_num,
+                }
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    try:
+                        info = ydl.extract_info(url, download=False)
+                    except Exception as e:
+                        self._ghi_log(str(e), "err")
+                        self.after(0, lambda: self._set_nut("idle"))
+                        self.after(0, lambda: self._set_tien_do(0, "❌ Thám thính thất bại"))
+                        return
+                
+                entries = []
+                if 'entries' in info:
+                    entries = info['entries']
+                else:
+                    entries = [info]
+                
+                lines = [json.dumps(e) for e in entries if e]
+                channel = info.get('channel', info.get('uploader', 'Vô Danh'))
+                total = info.get('playlist_count', info.get('n_entries', len(entries)))
 
                 if result.returncode != 0:
                     err = result.stderr.strip() or "Không thể dò la!"
@@ -290,12 +303,15 @@ class ChannelDLApp(ctk.CTk):
                 self._ghi_log(f"🏛️ Chủ động phủ: {channel}", "ok")
                 self._ghi_log(f"💎 Pháp bảo: {total} cái (thám thính {len(lines)})", "ok")
 
-                for l in lines[:10]:
-                    v = json.loads(l)
+                for v in entries[:10]:
+                    if not v: continue
                     title = v.get("title", "Vô danh")
                     dur = v.get("duration", 0)
-                    m, s = divmod(dur, 60)
-                    self._ghi_log(f"  ▸ {title}  [{m}:{s:02d}]")
+                    if dur:
+                        m, s = divmod(dur, 60)
+                        self._ghi_log(f"  ▸ {title}  [{m}:{s:02d}]")
+                    else:
+                        self._ghi_log(f"  ▸ {title}")
 
                 if len(lines) > 10:
                     self._ghi_log(f"  ... và {len(lines) - 10} cái nữa")
