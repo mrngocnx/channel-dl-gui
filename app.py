@@ -50,13 +50,13 @@ class App(ctk.CTk):
     def _build(self):
         m = ctk.CTkFrame(self); m.pack(fill="both", expand=True, padx=14, pady=14)
         ctk.CTkLabel(m, text=f"{APP_NAME} v{APP_VERSION} — By Ngọc NX",
-                     font=ctk.CTkFont(22, "bold")).pack(pady=(0,6))
+                     font=ctk.CTkFont(size=22, weight="bold")).pack(pady=(0,6))
         ctk.CTkLabel(m, text="Dán link kênh → Thám Thính → Tải toàn bộ video chất lượng cao nhất",
-                     font=ctk.CTkFont(13)).pack(pady=(0,14))
+                     font=ctk.CTkFont(size=13)).pack(pady=(0,14))
 
         # URL
         uf = ctk.CTkFrame(m); uf.pack(fill="x", pady=(0,10))
-        ctk.CTkLabel(uf, text="🗺️ Link Kênh", font=ctk.CTkFont(14,"bold")).pack(anchor="w", padx=10, pady=(10,4))
+        ctk.CTkLabel(uf, text="🗺️ Link Kênh", font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="w", padx=10, pady=(10,4))
         r = ctk.CTkFrame(uf, fg_color="transparent"); r.pack(fill="x", padx=10, pady=(0,10))
         self.url_var = ctk.StringVar()
         ctk.CTkEntry(r, textvariable=self.url_var, placeholder_text="https://youtube.com/@tenkenh").pack(side="left", fill="x", expand=True, padx=(0,6))
@@ -65,7 +65,7 @@ class App(ctk.CTk):
 
         # Output
         of = ctk.CTkFrame(m); of.pack(fill="x", pady=(0,10))
-        ctk.CTkLabel(of, text="📂 Kho Chứa", font=ctk.CTkFont(14,"bold")).pack(anchor="w", padx=10, pady=(10,6))
+        ctk.CTkLabel(of, text="📂 Kho Chứa", font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="w", padx=10, pady=(10,6))
         g = ctk.CTkFrame(of, fg_color="transparent"); g.pack(fill="x", padx=10, pady=(0,10))
         self.out_var = ctk.StringVar(value=DEFAULT_OUTPUT)
         ctk.CTkEntry(g, textvariable=self.out_var).pack(side="left", fill="x", expand=True, padx=(0,6))
@@ -85,19 +85,19 @@ class App(ctk.CTk):
         # Progress
         pf = ctk.CTkFrame(m); pf.pack(fill="x", pady=(0,10))
         self.pbar = ctk.CTkProgressBar(pf); self.pbar.pack(fill="x", padx=10, pady=(10,2)); self.pbar.set(0)
-        self.plabel = ctk.CTkLabel(pf, text="⏳ Chờ lệnh...", font=ctk.CTkFont(12))
+        self.plabel = ctk.CTkLabel(pf, text="⏳ Chờ lệnh...", font=ctk.CTkFont(size=12))
         self.plabel.pack(anchor="w", padx=10, pady=(0,10))
 
         # Log
         lf = ctk.CTkFrame(m); lf.pack(fill="both", expand=True, pady=(4,0))
         lh = ctk.CTkFrame(lf, fg_color="transparent", height=30); lh.pack(fill="x")
         ctk.CTkLabel(lh, text="📜 Nhật Ký", font=ctk.CTkFont(13,"bold")).pack(side="left")
-        ctk.CTkButton(lh, text="🗑️ Xóa", width=60, height=22, font=ctk.CTkFont(10), command=self._clear_log).pack(side="right", padx=(0,4))
+        ctk.CTkButton(lh, text="🗑️ Xóa", width=60, height=22, font=ctk.CTkFont(size=10), command=self._clear_log).pack(side="right", padx=(0,4))
         self.log = ctk.CTkTextbox(lf, height=180, font=ctk.CTkFont(family="Consolas", size=12))
         self.log.pack(fill="both", expand=True, pady=(4,0))
         self.log.bind("<Key>", lambda e: "break")
 
-        self.status = ctk.CTkLabel(self, text="Sẵn sàng 🐲", anchor="w", fg_color="gray15", font=ctk.CTkFont(11))
+        self.status = ctk.CTkLabel(self, text="Sẵn sàng 🐲", anchor="w", fg_color="gray15", font=ctk.CTkFont(size=11))
         self.status.pack(side="bottom", fill="x")
 
     # ─── HELPERS ───
