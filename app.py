@@ -185,12 +185,20 @@ class App(ctk.CTk):
                 with yt_dlp.YoutubeDL(ydl_opts) as y:
                     y.download([url])
 
-                # Dọn sạch videos/: chỉ giữ .mp4
-                for f in os.listdir(vdir):
-                    if not f.lower().endswith('.mp4'):
-                        try: os.remove(os.path.join(vdir, f))
-                        except: pass
-
+                    # Dọn sạch videos/: chỉ giữ .mp4, rename ảnh sang .jpg
+                    import imghdr
+                    for f in os.listdir(vdir):
+                        fp = os.path.join(vdir, f)
+                        if not f.lower().endswith('.mp4'):
+                            try:
+                                img_type = imghdr.what(fp)
+                                if img_type:
+                                    os.rename(fp, os.path.join(vdir, os.path.splitext(f)[0] + '.jpg'))
+                                else:
+                                    os.remove(fp)
+                            except:
+                                try: os.remove(fp)
+                                except: pass
                 # Avatar
                 try:
                     with yt_dlp.YoutubeDL({"quiet":True,"extract_flat":True,"playlistend":1}) as y:
