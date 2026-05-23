@@ -227,6 +227,8 @@ class ChannelDLApp(ctk.CTk):
         self._ghi_log(f"📍 {url}")
         self._ghi_log(f"📂 {output}")
 
+        # Cookie từ Chrome (nếu có) giúp tăng trust, tránh bị chặn
+        cookies_file = os.path.join(os.path.dirname(os.path.expanduser('~')), 'AppData', 'Local', 'Google', 'Chrome', 'User Data', 'Default', 'Network', 'Cookies')
         cmd = [
             'yt-dlp',
             '--paths', 'home:' + output,
@@ -240,9 +242,14 @@ class ChannelDLApp(ctk.CTk):
             '--download-archive', os.path.join(output, 'archive.txt'),
             '--ignore-errors', '--no-playlist-reverse',
             '--match-filter', '!is_live',
-            '--no-progress',
-            '--newline',
+            '--no-progress', '--newline',
             '--compat-options', 'no-youtube-unavailable-videos',
+            # Chống chặn YouTube
+            '--extractor-retries', '10',        # Retry 10 lần nếu lỗi
+            '--sleep-requests', '0.5',          # Delay 0.5s giữa mỗi request
+            '--sleep-interval', '3',            # Nghỉ 3-8s giữa mỗi video
+            '--max-sleep-interval', '8',
+            '--retry-sleep-func', 'lambda n: 2 * n',  # Tăng dần thời gian retry
             url,
         ]
 
