@@ -217,6 +217,7 @@ class ChannelDLApp(ctk.CTk):
                     t = v.get("title","?")
                     d = v.get("duration",0)
                     if d:
+                        d = int(d)
                         m,s = divmod(d,60); h=0
                         if m>=60: h,m=divmod(m,60)
                         ts = f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
