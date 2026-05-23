@@ -8,6 +8,7 @@ import os, re, sys, json, threading, queue
 from pathlib import Path
 from datetime import datetime
 from tkinter import filedialog
+import subprocess, select, urllib.request
 
 import customtkinter as ctk
 
@@ -315,6 +316,9 @@ class ChannelDLApp(ctk.CTk):
 
     def _thu_cong(self):
         self.running = False
+        if hasattr(self, 'ytdlp_process') and self.ytdlp_process and self.ytdlp_process.poll() is None:
+            self.ytdlp_process.kill()
+            self._ghi_log("⏹ Đã dừng quá trình tải", "warn")
         self._set_nut("idle")
         self._set_tien_do(0, "⏹ Đã dừng")
 
