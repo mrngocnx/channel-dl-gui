@@ -1,39 +1,32 @@
-# 🎬 Channel Downloader GUI
+# 🎬 Thâu Hương Pháp Bảo
 
-Tải toàn bộ video từ kênh **YouTube** / **TikTok** với giao diện trực quan.
+**Pháp bảo thu phục video từ toàn bộ động phủ — Lưu Ảnh Các (YouTube) / Đấu Chấm Các (TikTok)**
 
-Tự động chọn chất lượng cao nhất (best video + best audio → MP4).
+Tự động chọn chất lượng cao nhất (best video + best audio → MP4). Chỉ cần tọa độ động phủ, pháp bảo sẽ lo phần còn lại.
 
 ## Tính năng
 
-- ✅ Giao diện CustomTkinter — đẹp, dark mode, responsive
-- ✅ Hỗ trợ YouTube + TikTok
-- ✅ Chọn chất lượng cao nhất tự động
-- ✅ Giới hạn số lượng video
-- ✅ Lọc theo ngày
-- ✅ Bỏ qua video đã tải (archive)
-- ✅ Nhúng thumbnail + metadata vào file
-- ✅ Progress bar real-time
-- ✅ Resume nếu bị gián đoạn
-- ✅ Dừng bất cứ lúc nào
+- ✅ Tự động nhận diện tông môn — Lưu Ảnh Các hay Đấu Chấm Các
+- ✅ Chọn **chất lượng cao nhất** tự động (đỉnh cấp linh phẩm)
+- ✅ **Ấn lưu** — không thu lại video đã có
+- ✅ **Khắc ấn** — nhúng thumbnail + metadata vào file
+- ✅ Hạn mức pháp bảo, lọc niên đại
+- ✅ Progress bar + nhật ký tu luyện real-time
+- ✅ Thu công bất cứ lúc nào
 
 ## Cài đặt & Chạy
 
 ### Yêu cầu
 - Python 3.8+
-- FFmpeg (tải từ [ffmpeg.org](https://ffmpeg.org/) — cần để merge video+audio)
+- FFmpeg (tải từ [ffmpeg.org](https://ffmpeg.org/) — hợp nhất âm thanh hình ảnh)
+- Tkinter (có sẵn khi cài Python)
 
-### Cách chạy
+### Cách dùng (bản source)
 
 ```bash
-# Clone repo
 git clone https://github.com/ngocxn/channel-dl-gui
 cd channel-dl-gui
-
-# Cài dependencies
 pip install -r requirements.txt
-
-# Chạy
 python app.py
 ```
 
@@ -41,18 +34,22 @@ python app.py
 
 ```bash
 pip install pyinstaller
-pyinstaller --onefile --windowed --icon icon.ico --name "ChannelDL" app.py
+pyinstaller --onefile --windowed --name "ThauHuongPhapBao" app.py
 ```
 
-File exe sẽ ở thư mục `dist/`.
+File exe ở thư mục `dist/`.
 
-## Hướng dẫn sử dụng
+## Hướng dẫn
 
-1. **Dán URL kênh** — YouTube (`@tenkenh`) hoặc TikTok (`@username`)
-2. **Tùy chọn** — giới hạn số video, lọc ngày, chọn thư mục
-3. **Phân tích kênh** — xem trước thông tin kênh
-4. **Tải xuống** — bắt đầu tải, progress bar + log real-time
+1. **🗺️ Dán tọa độ động phủ** — link kênh YouTube (`@tenkenh`) hoặc TikTok (`@username`)
+2. **⚙️ Chỉnh pháp khí** — hạn mức, niên đại, kho chứa
+3. **🔍 Thám Thính** — dò xét động phủ trước
+4. **⬇️ Thu Phục** — pháp bảo vận hành, theo dõi tiến độ
 
 ## Download
 
 Tải bản build sẵn từ [Releases](https://github.com/ngocxn/channel-dl-gui/releases).
+
+---
+
+*Linh thú AI — Ngân Nguyệt 🐲*
