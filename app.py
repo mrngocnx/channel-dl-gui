@@ -39,6 +39,9 @@ class ChannelDLApp(ctk.CTk):
         self.title(f"{APP_NAME} v{APP_VERSION}")
         self.geometry(APP_GEOMETRY)
         self.minsize(680, 580)
+        try:
+            self.iconbitmap("icon.ico")
+        except: pass
         self.running = False
         self.after_id = None
         self.log_queue = queue.Queue()

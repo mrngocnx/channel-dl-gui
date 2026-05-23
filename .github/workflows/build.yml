@@ -31,7 +31,7 @@ jobs:
           Copy-Item "$($dir.FullName)/bin/ffmpeg.exe" "ffmpeg.exe"
       - name: Build with PyInstaller (onedir)
         run: |
-          pyinstaller --onedir --windowed --name "ChannelDL" --add-data "ffmpeg.exe;." --collect-all "customtkinter" --collect-submodules "yt_dlp" --collect-all "yt_dlp" --copy-metadata "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
+          pyinstaller --onedir --windowed --name "ChannelDL" --icon "icon.ico" --add-data "ffmpeg.exe;." --add-data "icon.ico;." --collect-all "customtkinter" --collect-submodules "yt_dlp" --collect-all "yt_dlp" --copy-metadata "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
       - name: Zip folder
         shell: pwsh
         run: |
