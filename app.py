@@ -1,20 +1,12 @@
-#!/usr/bin/env python3
-"""
-Channel DL — Tu Tiên Downloader v1.0
-Pháp bảo thu phục video toàn bộ động phủ YouTube / TikTok.
-"""
-
-import os, re, sys, json, threading, queue
+import os, re, sys, json, threading, queue, subprocess, urllib.request
 from pathlib import Path
 from datetime import datetime
 from tkinter import filedialog
-import subprocess, select, urllib.request
 
 import customtkinter as ctk
 
-# ─── CẤU HÌNH ───
 APP_NAME     = "🎬 Thâu Hương Pháp Bảo"
-APP_VERSION  = "2.6"
+APP_VERSION  = "2.7"
 APP_GEOMETRY = "780x680"
 THEME        = "dark"
 COLOR_THEME  = "green"
@@ -22,9 +14,6 @@ DEFAULT_OUTPUT = str(Path.home() / "Downloads" / "thau-huong")
 
 ctk.set_appearance_mode(THEME)
 ctk.set_default_color_theme(COLOR_THEME)
-
-def get_ytdlp_cmd():
-    return ['yt-dlp']
 
 def _detect_platform(url):
     if 'youtube.com' in url.lower() or 'youtu.be' in url.lower():
@@ -40,28 +29,29 @@ class ChannelDLApp(ctk.CTk):
         self.geometry(APP_GEOMETRY)
         self.minsize(680, 580)
         try:
-            self.iconbitmap("icon.ico")
+            icon_path = os.path.join(getattr(sys, '_MEIPASS', '.'), 'icon.ico')
+            if os.path.exists(icon_path):
+                self.iconbitmap(icon_path)
         except: pass
         self.running = False
+        self.paused = False
         self.after_id = None
         self.log_queue = queue.Queue()
-        self.video_list = []  # danh sách video đã thám thính
-
+        self.video_list = []
+        self.ytdlp_process = None
         self._build_ui()
         self._khoi_dong_log()
         self._ghi_log("Pháp bảo sẵn sàng 🐲", "ok")
 
-    # ─── GIAO DIỆN ───
     def _build_ui(self):
         main = ctk.CTkFrame(self)
         main.pack(fill="both", expand=True, padx=14, pady=14)
 
         ctk.CTkLabel(main, text=f"{APP_NAME} v{APP_VERSION} — By Ngọc NX",
                       font=ctk.CTkFont(size=22, weight="bold")).pack(pady=(0, 6))
-        ctk.CTkLabel(main, text="Dán link kênh → Thám Thính → Xác nhận tải toàn bộ video chất lượng cao nhất",
+        ctk.CTkLabel(main, text="Dán link kênh → Thám Thính → Xác Nhận tải toàn bộ video",
                       font=ctk.CTkFont(size=13)).pack(pady=(0, 14))
 
-        # ── URL ──
         uf = ctk.CTkFrame(main)
         uf.pack(fill="x", pady=(0, 10))
         ctk.CTkLabel(uf, text="🗺️ Link Kênh",
@@ -76,7 +66,6 @@ class ChannelDLApp(ctk.CTk):
         ctk.CTkButton(row, text="✕", width=38, fg_color="gray30",
                        command=lambda: self.url_var.set("")).pack(side="left")
 
-        # ── Kho chứa ──
         of = ctk.CTkFrame(main)
         of.pack(fill="x", pady=(0, 10))
         ctk.CTkLabel(of, text="📂  Kho Chứa",
@@ -88,20 +77,24 @@ class ChannelDLApp(ctk.CTk):
         self.output_entry.pack(side="left", fill="x", expand=True, padx=(0, 6))
         ctk.CTkButton(g, text="📂 Chọn Thư Mục", width=100, command=self._chi_duong).pack(side="left")
 
-        # ── Nút ──
         bf = ctk.CTkFrame(main)
         bf.pack(fill="x", pady=(0, 10))
         self.analyze_btn = ctk.CTkButton(bf, text="🔍 Thám Thính", command=self._tham_thinh,
-                                          width=140, fg_color="#2B5E9E")
-        self.analyze_btn.pack(side="left", padx=(0, 8))
-        self.download_btn = ctk.CTkButton(bf, text="⬇️  Xác Nhận Tải Tất Cả", command=self._bat_dau_thu,
-                                          width=180, state="disabled")
-        self.download_btn.pack(side="left", padx=(0, 8))
-        self.stop_btn = ctk.CTkButton(bf, text="■ Dừng", width=80, fg_color="#B33",
-                                       state="disabled", command=self._thu_cong)
+                                          width=130, fg_color="#2B5E9E")
+        self.analyze_btn.pack(side="left", padx=(0, 6))
+        self.download_btn = ctk.CTkButton(bf, text="⬇️  Tải Tất Cả", command=self._bat_dau_tai,
+                                          width=130)
+        self.download_btn.pack(side="left", padx=(0, 6))
+        self.pause_btn = ctk.CTkButton(bf, text="⏸ Tạm Dừng", command=self._tam_dung,
+                                        width=100, fg_color="#E67E22", state="disabled")
+        self.pause_btn.pack(side="left", padx=(0, 6))
+        self.resume_btn = ctk.CTkButton(bf, text="▶ Tiếp Tục", command=self._tiep_tuc,
+                                         width=100, fg_color="#27AE60", state="disabled")
+        self.resume_btn.pack(side="left", padx=(0, 6))
+        self.stop_btn = ctk.CTkButton(bf, text="⏹ Dừng", command=self._dung_tai,
+                                       width=80, fg_color="#B33", state="disabled")
         self.stop_btn.pack(side="left")
 
-        # ── Tiến độ ──
         pf = ctk.CTkFrame(main)
         pf.pack(fill="x", pady=(0, 10))
         self.progress_bar = ctk.CTkProgressBar(pf)
@@ -110,26 +103,22 @@ class ChannelDLApp(ctk.CTk):
         self.prog_label = ctk.CTkLabel(pf, text="⏳ Chờ lệnh...", font=ctk.CTkFont(size=12))
         self.prog_label.pack(anchor="w", padx=10, pady=(0, 10))
 
-        # ── Log ──
         log_frame = ctk.CTkFrame(main)
         log_frame.pack(fill="both", expand=True, pady=(4, 0))
-        
         log_header = ctk.CTkFrame(log_frame, fg_color="transparent", height=30)
         log_header.pack(fill="x")
         ctk.CTkLabel(log_header, text="📜 Nhật Ký:", font=ctk.CTkFont(size=13, weight="bold")).pack(side="left")
         ctk.CTkButton(log_header, text="🗑️ Xóa", width=60, height=22, font=ctk.CTkFont(size=10),
                        command=self._xoa_nhat_ky).pack(side="right", padx=(0, 4))
-        
         self.log_text = ctk.CTkTextbox(log_frame, height=180, font=ctk.CTkFont(family="Consolas", size=12))
-        self.log_text.bind("<Key>", lambda e: "break")  # Chặn gõ phím
         self.log_text.pack(fill="both", expand=True, pady=(4, 0))
+        self.log_text.bind("<Key>", lambda e: "break")
 
         self.status_var = ctk.StringVar(value="Sẵn sàng 🐲")
         self.status_bar = ctk.CTkLabel(self, textvariable=self.status_var, font=ctk.CTkFont(size=11),
                                         anchor="w", fg_color="gray15")
         self.status_bar.pack(side="bottom", fill="x")
 
-    # ─── THAO TÁC ───
     def _dan(self):
         try:
             t = self.clipboard_get()
@@ -161,19 +150,13 @@ class ChannelDLApp(ctk.CTk):
         self.log_text.delete("1.0", "end")
         self._ghi_log("📋 Nhật ký đã xóa", "info")
 
-    def _set_nut(self, state):
-        if state == "idle":
-            self.analyze_btn.configure(state="normal")
-            self.download_btn.configure(state="disabled")
-            self.stop_btn.configure(state="disabled")
-        elif state == "working":
-            self.analyze_btn.configure(state="disabled")
-            self.download_btn.configure(state="disabled")
-            self.stop_btn.configure(state="normal")
-        elif state == "ready":
-            self.analyze_btn.configure(state="normal")
-            self.download_btn.configure(state="normal")
-            self.stop_btn.configure(state="disabled")
+    def _set_ui_state(self, state):
+        """idle, ready, working, paused"""
+        self.analyze_btn.configure(state="normal" if state in ("idle","ready") else "disabled")
+        self.download_btn.configure(state="normal" if state == "ready" else "disabled")
+        self.pause_btn.configure(state="normal" if state == "working" else "disabled")
+        self.resume_btn.configure(state="normal" if state == "paused" else "disabled")
+        self.stop_btn.configure(state="normal" if state in ("working","paused") else "disabled")
 
     def _set_tien_do(self, pct, text=""):
         self.progress_bar.set(pct / 100)
@@ -184,176 +167,159 @@ class ChannelDLApp(ctk.CTk):
         url = self.url_var.get().strip()
         if not url:
             self._ghi_log("Nhập link kênh trước!", "warn"); return
-
         tm = _detect_platform(url)
-        self._set_nut("working")
+        self._set_ui_state("working")
         self._set_tien_do(0, "🔍 Đang thám thính...")
         self._ghi_log("━━━ THÁM THÍNH ━━━", "title")
         self._ghi_log(f"📍 {url}")
         if tm: self._ghi_log(f"🏯 {tm}", "ok")
-
         self.video_list = []
 
         def run():
             try:
                 import yt_dlp
             except ImportError:
-                self._ghi_log("yt-dlp chưa được cài, đang tải...", "warn")
-                import subprocess, sys
+                self._ghi_log("Đang cài yt-dlp...", "warn")
                 subprocess.run([sys.executable, '-m', 'pip', 'install', 'yt-dlp'], capture_output=True)
                 import yt_dlp
-            
             try:
-                ydl_opts = {
-                    'quiet': True,
-                    'extract_flat': 'in_playlist',
-                    'ignoreerrors': True,
-                    'playlistend': None,
-                }
+                ydl_opts = {'quiet': True, 'extract_flat': 'in_playlist', 'ignoreerrors': True, 'playlistend': None}
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    try:
-                        info = ydl.extract_info(url, download=False)
-                    except Exception as e:
-                        self._ghi_log(f"Lỗi: {e}", "err")
-                        self.after(0, lambda: self._set_nut("idle"))
-                        self.after(0, lambda: self._set_tien_do(0, "❌ Thám thính thất bại"))
-                        return
-
+                    info = ydl.extract_info(url, download=False)
                 entries = info.get('entries', [info]) if info else []
-                entries = [e for e in entries if e and not e.get('is_live', False) and not e.get('live_status', '') == 'is_live']
-                channel = info.get('channel', info.get('uploader', 'Vô Danh'))
+                entries = [e for e in entries if e and not e.get('is_live', False) and e.get('live_status', '') != 'is_live']
                 total = len(entries)
-
                 self.video_list = entries
-                self._ghi_log(f"🏛️ Chủ: {channel}", "ok")
+                self._ghi_log(f"🏛️ Chủ: {info.get('channel','?')}", "ok")
                 self._ghi_log(f"💎 Tổng cộng: {total} video (đã lọc livestream)", "ok")
-                self._ghi_log(f"📋 Danh sách {total} video:", "info")
-
                 for i, v in enumerate(entries, 1):
                     t = v.get("title","?")
                     d = v.get("duration",0)
                     if d:
-                        d = int(d)
-                        m,s = divmod(d,60); h=0
-                        if m>=60: h,m=divmod(m,60)
+                        d = int(d); m,s = divmod(d,60); h=0
+                        if m>=60: h,m = divmod(m,60)
                         ts = f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
                         self._ghi_log(f"  {i:3d}. {t}  [{ts}]")
                     else:
                         self._ghi_log(f"  {i:3d}. {t}")
-
-                self.after(0, lambda: self._set_nut("ready"))
-                self.after(0, lambda: self._set_tien_do(100, f"✅ {len(entries)}/{total} video — Nhấn Xác Nhận để tải"))
-                self.after(0, lambda: self.status_var.set(f"✅ {len(entries)} video — sẵn sàng tải"))
-
+                self.after(0, lambda: self._set_ui_state("ready"))
+                self.after(0, lambda: self._set_tien_do(100, f"✅ {total} video — Nhấn Tải Tất Cả"))
             except Exception as e:
                 self._ghi_log(f"Lỗi: {e}", "err")
-                self.after(0, lambda: self._set_nut("idle"))
+                self.after(0, lambda: self._set_ui_state("idle"))
                 self.after(0, lambda: self._set_tien_do(0, "❌ Thám thính thất bại"))
-
         threading.Thread(target=run, daemon=True).start()
 
-    # ─── THU PHỤC (TẢI ALL) ───
-    def _bat_dau_thu(self):
+    # ─── DOWNLOAD (subprocess) ───
+    def _bat_dau_tai(self):
         url = self.url_var.get().strip()
         output = self.output_var.get().strip() or DEFAULT_OUTPUT
-        Path(output).mkdir(parents=True, exist_ok=True)
+        video_dir = os.path.join(output, 'videos')
+        thumb_dir = os.path.join(output, 'thumbs')
+        Path(video_dir).mkdir(parents=True, exist_ok=True)
+        Path(thumb_dir).mkdir(parents=True, exist_ok=True)
 
         self.running = True
-        self._set_nut("working")
-        self._set_tien_do(5, "🚀 Đang khởi động pháp bảo...")
-        self._ghi_log("━━━ THU PHỤC ━━━", "title")
+        self.paused = False
+        self._set_ui_state("working")
+        self._set_tien_do(0, "📥 Đang tải...")
+        self._ghi_log("━━━ TẢI VIDEO ━━━", "title")
         self._ghi_log(f"📍 {url}")
         self._ghi_log(f"📂 {output}")
 
+        cmd = [
+            'yt-dlp',
+            '--paths', 'home:' + output,
+            '--paths', 'video:videos',
+            '--paths', 'thumbnail:thumbs',
+            '-o', '%(title).100s.%(ext)s',
+            '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+            '--merge-output-format', 'mp4',
+            '--write-thumbnail', '--no-embed-thumbnail',
+            '--embed-metadata',
+            '--download-archive', os.path.join(output, 'archive.txt'),
+            '--ignore-errors', '--no-playlist-reverse',
+            '--match-filter', '!is_live',
+            '--no-progress',
+            '--newline',
+            '--compat-options', 'no-youtube-unavailable-videos',
+            url,
+        ]
+
         def run():
             try:
-                import yt_dlp
-            except ImportError:
-                self._ghi_log("yt-dlp chưa được cài, đang tải...", "warn")
-                import subprocess, sys
-                subprocess.run([sys.executable, '-m', 'pip', 'install', 'yt-dlp'], capture_output=True)
-                import yt_dlp
-            
-            try:
-                video_dir = os.path.join(output, 'videos')
-                thumb_dir = os.path.join(output, 'thumbs')
-                Path(video_dir).mkdir(parents=True, exist_ok=True)
-                Path(thumb_dir).mkdir(parents=True, exist_ok=True)
-                
-                ydl_opts = {
-                    'outtmpl': {'default': os.path.join(video_dir, '%(title).100s.%(ext)s'),
-                                'thumbnail': os.path.join(thumb_dir, '%(title).100s.%(ext)s')},
-                    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-                    'merge_output_format': 'mp4',
-                    'writethumbnail': True,
-                    'embedthumbnail': False,
-                    'embedmetadata': True,
-                    'addmetadata': True,
-                    'download_archive': os.path.join(output, 'archive.txt'),
-                    'ignoreerrors': True,
-                    'quiet': True,
-                    'progress_hooks': [self._tien_trinh],
-                    'match_filter': yt_dlp.utils.match_filter_func('!is_live'),
-                }
+                self.ytdlp_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                for line in iter(self.ytdlp_process.stdout.readline, ''):
+                    if not self.running:
+                        self.ytdlp_process.kill()
+                        break
+                    while self.paused and self.running:
+                        import time; time.sleep(0.5)
+                    if '[download]' in line and '%' in line:
+                        try:
+                            pct = line.split('%')[0].split()[-1]
+                            p = float(pct)
+                            self.after(0, lambda pp=p: self._set_tien_do(pp, f"📥 Đang tải... {pp:.0f}%"))
+                        except: pass
+                    elif 'Destination' in line or 'has already' in line:
+                        self._ghi_log(f"  {line.strip()[:90]}")
 
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(url, download=True)
-                    # Tải avatar kênh
-                    try:
-                        if info and 'channel_url' in info:
-                            import urllib.request
-                            avatar = ydl.extract_info(info['channel_url'], download=False)
-                            if avatar and 'thumbnails' in avatar:
-                                av_url = avatar['thumbnails'][-1].get('url', '')
-                                if av_url:
-                                    urllib.request.urlretrieve(av_url, os.path.join(output, 'avatar.jpg'))
-                                    self._ghi_log(f"🖼️ Avatar kênh đã lưu: avatar.jpg", "ok")
-                    except Exception:
-                        pass
-                    
-                # Dọn ảnh trùng trong videos/
+                self.ytdlp_process.wait()
+                
+                # Dọn ảnh trùng
                 try:
                     for f in os.listdir(video_dir):
-                        if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')):
+                        if f.lower().endswith(('.jpg','.jpeg','.png','.webp')):
                             os.remove(os.path.join(video_dir, f))
                 except: pass
 
-                self.after(0, lambda: self._set_tien_do(100, "✅ Đại Công Cáo Thành!"))
-                self.after(0, lambda: self._set_nut("idle"))
-                self.after(0, lambda: self.status_var.set("✅ Hoàn tất!"))
+                # Avatar
+                try:
+                    av_cmd = ['yt-dlp', '--print', '%(thumbnail)s', '--flat-playlist', '--playlist-end', '1', url]
+                    av_r = subprocess.run(av_cmd, capture_output=True, text=True, timeout=15)
+                    av_url = av_r.stdout.strip()
+                    if av_url and av_url.startswith('http'):
+                        urllib.request.urlretrieve(av_url, os.path.join(output, 'avatar.jpg'))
+                        self._ghi_log(f"🖼️ Avatar kênh: avatar.jpg", "ok")
+                except: pass
 
+                self.after(0, lambda: self._set_tien_do(100, "✅ Hoàn tất!"))
+                self.after(0, lambda: self._set_ui_state("idle"))
+                self.after(0, lambda: self.status_var.set("✅ Hoàn tất!"))
             except Exception as e:
                 self._ghi_log(f"Lỗi: {e}", "err")
-                self.after(0, lambda: self._set_tien_do(0, "❌ Thất bại"))
-                self.after(0, lambda: self._set_nut("idle"))
+                self.after(0, lambda: self._set_ui_state("idle"))
 
         threading.Thread(target=run, daemon=True).start()
 
-    def _tien_trinh(self, d):
-        if d['status'] == 'downloading':
-            pct = d.get('_percent_str', '0%').replace('%','')
-            try: p = float(pct)
-            except: p = 0
-            self.after(0, lambda: self._set_tien_do(p, f"📥 {d.get('filename','?')[:50]}... {pct}%"))
-        elif d['status'] == 'finished':
-            self._ghi_log(f"✅ {d.get('filename','?')}")
+    def _tam_dung(self):
+        self.paused = True
+        self._set_ui_state("paused")
+        self._ghi_log("⏸ Đã tạm dừng", "warn")
+        self._set_tien_do(self.progress_bar.get()*100, "⏸ Tạm dừng")
 
-    def _thu_cong(self):
+    def _tiep_tuc(self):
+        self.paused = False
+        self._set_ui_state("working")
+        self._ghi_log("▶ Tiếp tục tải...", "ok")
+
+    def _dung_tai(self):
         self.running = False
+        self.paused = False
         try:
-            if hasattr(self, 'ytdlp_process') and self.ytdlp_process is not None:
+            if self.ytdlp_process and self.ytdlp_process.poll() is None:
                 self.ytdlp_process.kill()
-                self.ytdlp_process.wait(timeout=3)
-                self._ghi_log("⏹ Đã dừng quá trình tải", "warn")
-        except Exception as e:
-            self._ghi_log(f"Lỗi khi dừng: {e}", "err")
-        self._set_nut("idle")
+                self.ytdlp_process.wait(timeout=5)
+        except: pass
+        self._set_ui_state("idle")
         self._set_tien_do(0, "⏹ Đã dừng")
+        self._ghi_log("⏹ Đã dừng tải", "warn")
 
-    # ─── THOÁT ───
     def on_closing(self):
-        if self.running:
-            self._thu_cong()
+        try:
+            if self.ytdlp_process and self.ytdlp_process.poll() is None:
+                self.ytdlp_process.kill()
+        except: pass
         if self.after_id:
             self.after_cancel(self.after_id)
         self.destroy()
