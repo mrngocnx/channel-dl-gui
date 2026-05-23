@@ -170,8 +170,9 @@ class App(ctk.CTk):
                     'paths': {'home': out},
                     'outtmpl': {'default': 'videos/%(title).100s.%(ext)s',
                                 'thumbnail': 'thumbs/%(title).100s.%(ext)s'},
-                    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+                    'format': 'bestvideo+bestaudio/best',
                     'merge_output_format': 'mp4',
+                    'remux_video': 'mp4',  # TikTok cần remux
                     'writethumbnail': True, 'embedthumbnail': False,
                     'embedmetadata': True, 'addmetadata': True,
                     'download_archive': os.path.join(out, 'archive.txt'),
@@ -184,9 +185,9 @@ class App(ctk.CTk):
                 with yt_dlp.YoutubeDL(ydl_opts) as y:
                     y.download([url])
 
-                # Dọn ảnh trùng khỏi videos/
+                # Dọn sạch videos/: chỉ giữ .mp4
                 for f in os.listdir(vdir):
-                    if not f.lower().endswith(('.mp4','.mkv','.avi','.mov','.webm','.flv','.wmv','.ts')):
+                    if not f.lower().endswith('.mp4'):
                         try: os.remove(os.path.join(vdir, f))
                         except: pass
 
