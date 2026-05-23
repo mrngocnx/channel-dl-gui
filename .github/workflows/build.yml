@@ -30,11 +30,9 @@ jobs:
           Expand-Archive -Path "ffmpeg.zip" -DestinationPath "." -Force
           $dir = Get-ChildItem -Directory "ffmpeg-*" | Select-Object -First 1
           Copy-Item "$($dir.FullName)/bin/ffmpeg.exe" "ffmpeg.exe"
-          # yt-dlp.exe portable
-          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "yt-dlp.exe"
       - name: Build with PyInstaller (onedir)
         run: |
-          pyinstaller --onedir --windowed --name "ChannelDL" --icon "icon.ico" --add-data "ffmpeg.exe;." --add-data "yt-dlp.exe;." --add-data "icon.ico;." --collect-all "customtkinter" --collect-submodules "yt_dlp" --collect-all "yt_dlp" --copy-metadata "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
+          pyinstaller --onedir --windowed --name "ChannelDL" --icon "icon.ico" --add-data "ffmpeg.exe;."  --add-data "icon.ico;." --collect-all "customtkinter" --collect-submodules "yt_dlp" --collect-all "yt_dlp" --copy-metadata "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
       - name: Zip folder
         shell: pwsh
         run: |
