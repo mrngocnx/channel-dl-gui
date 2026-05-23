@@ -307,6 +307,13 @@ class ChannelDLApp(ctk.CTk):
                                     self._ghi_log(f"🖼️ Avatar kênh đã lưu: avatar.jpg", "ok")
                     except Exception:
                         pass
+                    
+                # Dọn ảnh trùng trong videos/
+                try:
+                    for f in os.listdir(video_dir):
+                        if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')):
+                            os.remove(os.path.join(video_dir, f))
+                except: pass
 
                 self.after(0, lambda: self._set_tien_do(100, "✅ Đại Công Cáo Thành!"))
                 self.after(0, lambda: self._set_nut("idle"))
