@@ -91,7 +91,7 @@ class App(ctk.CTk):
         # Log
         lf = ctk.CTkFrame(m); lf.pack(fill="both", expand=True, pady=(4,0))
         lh = ctk.CTkFrame(lf, fg_color="transparent", height=30); lh.pack(fill="x")
-        ctk.CTkLabel(lh, text="📜 Nhật Ký", font=ctk.CTkFont(13,"bold")).pack(side="left")
+        ctk.CTkLabel(lh, text="📜 Nhật Ký", font=ctk.CTkFont(size=13, weight="bold")).pack(side="left")
         ctk.CTkButton(lh, text="🗑️ Xóa", width=60, height=22, font=ctk.CTkFont(size=10), command=self._clear_log).pack(side="right", padx=(0,4))
         self.log = ctk.CTkTextbox(lf, height=180, font=ctk.CTkFont(family="Consolas", size=12))
         self.log.pack(fill="both", expand=True, pady=(4,0))
