@@ -255,25 +255,53 @@ class ChannelDLApp(ctk.CTk):
 
         def run():
             try:
-                self.ytdlp_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-                for line in iter(self.ytdlp_process.stdout.readline, ''):
-                    if not self.running:
-                        self.ytdlp_process.kill()
-                        break
-                    while self.paused and self.running:
-                        import time; time.sleep(0.5)
-                    if '[download]' in line and '%' in line:
-                        try:
-                            pct = line.split('%')[0].split()[-1]
-                            p = float(pct)
-                            self.after(0, lambda pp=p: self._set_tien_do(pp, f"📥 Đang tải... {pp:.0f}%"))
-                        except: pass
-                    elif 'Destination' in line or 'has already' in line:
-                        self._ghi_log(f"  {line.strip()[:90]}")
+                # Thử subprocess trước (dành cho user đã cài yt-dlp global)
+                import subprocess
+                try:
+                    subprocess.run(['yt-dlp', '--version'], capture_output=True, timeout=5, check=True)
+                    use_subprocess = True
+                except:
+                    use_subprocess = False
+                    self._ghi_log("yt-dlp chưa cài, dùng module tích hợp sẵn", "info")
 
-                self.ytdlp_process.wait()
-                
-                # Dọn ảnh trùng: xóa mọi thứ không phải video
+                if use_subprocess:
+                    self.ytdlp_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                    for line in iter(self.ytdlp_process.stdout.readline, ''):
+                        if not self.running:
+                            self.ytdlp_process.kill()
+                            break
+                        while self.paused and self.running:
+                            import time; time.sleep(0.5)
+                        if '[download]' in line and '%' in line:
+                            try:
+                                pct = line.split('%')[0].split()[-1]
+                                p = float(pct)
+                                self.after(0, lambda pp=p: self._set_tien_do(pp, f"📥 Đang tải... {pp:.0f}%"))
+                            except: pass
+                        elif 'Destination' in line or 'has already' in line:
+                            self._ghi_log(f"  {line.strip()[:90]}")
+                    self.ytdlp_process.wait()
+                else:
+                    # Fallback: dùng module yt-dlp tích hợp
+                    import yt_dlp
+                    ydl_opts = {
+                        'paths': {'home': output, 'video': 'videos', 'thumbnail': 'thumbs'},
+                        'outtmpl': '%(title).100s.%(ext)s',
+                        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+                        'merge_output_format': 'mp4',
+                        'writethumbnail': True, 'embedthumbnail': False,
+                        'embedmetadata': True,
+                        'download_archive': os.path.join(output, 'archive.txt'),
+                        'ignoreerrors': True,
+                        'match_filter': yt_dlp.utils.match_filter_func('!is_live'),
+                        'extractor_retries': 10,
+                        'sleep_interval': 3, 'max_sleep_interval': 8,
+                        'progress_hooks': [self._tien_trinh],
+                    }
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        ydl.download([url])
+
+                # Dọn ảnh trùng
                 try:
                     video_exts = ('.mp4','.mkv','.avi','.mov','.webm','.flv','.wmv')
                     for f in os.listdir(video_dir):
@@ -283,17 +311,23 @@ class ChannelDLApp(ctk.CTk):
 
                 # Avatar
                 try:
-                    av_cmd = ['yt-dlp', '--print', '%(thumbnail)s', '--flat-playlist', '--playlist-end', '1', url]
-                    av_r = subprocess.run(av_cmd, capture_output=True, text=True, timeout=15)
-                    av_url = av_r.stdout.strip()
-                    if av_url and av_url.startswith('http'):
-                        urllib.request.urlretrieve(av_url, os.path.join(output, 'avatar.jpg'))
+                    src = url
+                    if use_subprocess:
+                        av_cmd = ['yt-dlp', '--print', '%(thumbnail)s', '--flat-playlist', '--playlist-end', '1', url]
+                        av_r = subprocess.run(av_cmd, capture_output=True, text=True, timeout=15)
+                        src = av_r.stdout.strip()
+                    else:
+                        with yt_dlp.YoutubeDL({'quiet':True,'extract_flat':True,'playlistend':1}) as y:
+                            av_i = y.extract_info(url, download=False)
+                            if av_i.get('entries'): av_i = av_i['entries'][0]
+                            src = (av_i.get('thumbnails') or [{}])[-1].get('url','')
+                    if src and src.startswith('http'):
+                        urllib.request.urlretrieve(src, os.path.join(output, 'avatar.jpg'))
                         self._ghi_log(f"🖼️ Avatar kênh: avatar.jpg", "ok")
                 except: pass
 
                 self.after(0, lambda: self._set_tien_do(100, "✅ Hoàn tất!"))
                 self.after(0, lambda: self._set_ui_state("idle"))
-                self.after(0, lambda: self.status_var.set("✅ Hoàn tất!"))
             except Exception as e:
                 self._ghi_log(f"Lỗi: {e}", "err")
                 self.after(0, lambda: self._set_ui_state("idle"))
