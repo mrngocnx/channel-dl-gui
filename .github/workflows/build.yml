@@ -143,5 +143,5 @@ jobs:
             artifacts/ChannelDL-Windows/ChannelDL.exe
             artifacts/ChannelDL-macOS/ChannelDL
             artifacts/ChannelDL-Linux/ChannelDL
-          draft: true
+          draft: false
           prerelease: false
