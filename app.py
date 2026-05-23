@@ -170,7 +170,7 @@ class App(ctk.CTk):
                     'paths': {'home': out},
                     'outtmpl': {'default': 'videos/%(title).100s.%(ext)s',
                                 'thumbnail': 'thumbs/%(title).100s.%(ext)s'},
-                    'format': 'bestvideo+bestaudio/best',
+                    'format': 'bv*+ba/b',
                     'merge_output_format': 'mp4',
                     'remux_video': 'mp4',  # TikTok cần remux
                     'writethumbnail': True, 'embedthumbnail': False,
