@@ -180,6 +180,13 @@ class ChannelDLApp(ctk.CTk):
         def run():
             try:
                 import yt_dlp
+            except ImportError:
+                self._ghi_log("yt-dlp chưa được cài, đang tải...", "warn")
+                import subprocess, sys
+                subprocess.run([sys.executable, '-m', 'pip', 'install', 'yt-dlp'], capture_output=True)
+                import yt_dlp
+            
+            try:
                 ydl_opts = {'quiet': True, 'extract_flat': True, 'dump_single_json': True}
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     try:
@@ -240,6 +247,13 @@ class ChannelDLApp(ctk.CTk):
         def run():
             try:
                 import yt_dlp
+            except ImportError:
+                self._ghi_log("yt-dlp chưa được cài, đang tải...", "warn")
+                import subprocess, sys
+                subprocess.run([sys.executable, '-m', 'pip', 'install', 'yt-dlp'], capture_output=True)
+                import yt_dlp
+            
+            try:
                 ydl_opts = {
                     'outtmpl': os.path.join(output, '%(title).100s.%(ext)s'),
                     'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
