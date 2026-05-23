@@ -210,20 +210,18 @@ class ChannelDLApp(ctk.CTk):
                 self.video_list = entries
                 self._ghi_log(f"🏛️ Chủ: {channel}", "ok")
                 self._ghi_log(f"💎 Tổng cộng: {total} video (đã lọc livestream)", "ok")
+                self._ghi_log(f"📋 Danh sách {total} video:", "info")
 
-                for v in entries[:10]:
+                for i, v in enumerate(entries, 1):
                     t = v.get("title","?")
                     d = v.get("duration",0)
                     if d:
                         m,s = divmod(d,60); h=0
                         if m>=60: h,m=divmod(m,60)
                         ts = f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
-                        self._ghi_log(f"  ▸ {t}  [{ts}]")
+                        self._ghi_log(f"  {i:3d}. {t}  [{ts}]")
                     else:
-                        self._ghi_log(f"  ▸ {t}")
-
-                if len(entries) > 10:
-                    self._ghi_log(f"  ... và {len(entries)-10} video khác", "info")
+                        self._ghi_log(f"  {i:3d}. {t}")
 
                 self.after(0, lambda: self._set_nut("ready"))
                 self.after(0, lambda: self._set_tien_do(100, f"✅ {len(entries)}/{total} video — Nhấn Xác Nhận để tải"))
