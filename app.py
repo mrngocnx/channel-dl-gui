@@ -14,7 +14,7 @@ import customtkinter as ctk
 
 # ─── CẤU HÌNH ───
 APP_NAME     = "🎬 Thâu Hương Pháp Bảo"
-APP_VERSION  = "1.0"
+APP_VERSION  = "2.6"
 APP_GEOMETRY = "780x680"
 THEME        = "dark"
 COLOR_THEME  = "green"
@@ -53,7 +53,7 @@ class ChannelDLApp(ctk.CTk):
         main = ctk.CTkFrame(self)
         main.pack(fill="both", expand=True, padx=14, pady=14)
 
-        ctk.CTkLabel(main, text=f"{APP_NAME} v{APP_VERSION}",
+        ctk.CTkLabel(main, text=f"{APP_NAME} v{APP_VERSION} — By Ngọc NX",
                       font=ctk.CTkFont(size=22, weight="bold")).pack(pady=(0, 6))
         ctk.CTkLabel(main, text="Dán link kênh → Thám Thính → Xác nhận tải toàn bộ video chất lượng cao nhất",
                       font=ctk.CTkFont(size=13)).pack(pady=(0, 14))
@@ -117,8 +117,8 @@ class ChannelDLApp(ctk.CTk):
         ctk.CTkButton(log_header, text="🗑️ Xóa", width=60, height=22, font=ctk.CTkFont(size=10),
                        command=self._xoa_nhat_ky).pack(side="right", padx=(0, 4))
         
-        self.log_text = ctk.CTkTextbox(log_frame, height=180, font=ctk.CTkFont(family="Consolas", size=12), 
-                                        state="disabled")
+        self.log_text = ctk.CTkTextbox(log_frame, height=180, font=ctk.CTkFont(family="Consolas", size=12))
+        self.log_text.bind("<Key>", lambda e: "break")  # Chặn gõ phím
         self.log_text.pack(fill="both", expand=True, pady=(4, 0))
 
         self.status_var = ctk.StringVar(value="Sẵn sàng 🐲")
@@ -155,9 +155,7 @@ class ChannelDLApp(ctk.CTk):
         poll()
 
     def _xoa_nhat_ky(self):
-        self.log_text.configure(state="normal")
         self.log_text.delete("1.0", "end")
-        self.log_text.configure(state="disabled")
         self._ghi_log("📋 Nhật ký đã xóa", "info")
 
     def _set_nut(self, state):
@@ -332,9 +330,13 @@ class ChannelDLApp(ctk.CTk):
 
     def _thu_cong(self):
         self.running = False
-        if hasattr(self, 'ytdlp_process') and self.ytdlp_process and self.ytdlp_process.poll() is None:
-            self.ytdlp_process.kill()
-            self._ghi_log("⏹ Đã dừng quá trình tải", "warn")
+        try:
+            if hasattr(self, 'ytdlp_process') and self.ytdlp_process is not None:
+                self.ytdlp_process.kill()
+                self.ytdlp_process.wait(timeout=3)
+                self._ghi_log("⏹ Đã dừng quá trình tải", "warn")
+        except Exception as e:
+            self._ghi_log(f"Lỗi khi dừng: {e}", "err")
         self._set_nut("idle")
         self._set_tien_do(0, "⏹ Đã dừng")
 
