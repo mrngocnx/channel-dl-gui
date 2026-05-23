@@ -173,28 +173,19 @@ class App(ctk.CTk):
         vdir = os.path.join(out, 'videos'); tdir = os.path.join(out, 'thumbs')
         os.makedirs(vdir, exist_ok=True); os.makedirs(tdir, exist_ok=True)
 
-        # Phân biệt TikTok vs YouTube để chọn format
-        is_tiktok = 'tiktok.com' in url.lower()
-
         self._state(True); self._progress(0, "📥  Đang tải...")
         self._log("━━━  TẢI VIDEO  ━━━", "title")
         self._log(f"📍 {url}"); self._log(f"📂 {out}")
-        self._log(f"🎵 Nguồn: {'TikTok' if is_tiktok else 'YouTube'}", "info")
 
         def run():
             try:
                 import yt_dlp
                 # Format riêng cho từng nền tảng
-                if is_tiktok:
-                    fmt = 'bv*+ba/b'  # TikTok: 1 stream duy nhất
-                else:
-                    fmt = 'bv*+ba/b'  # YouTube: tách video+audio rồi merge
-
                 ydl_opts = {
                     'paths': {'home': out},
                     'outtmpl': {'default': 'videos/%(title).100s.%(ext)s',
                                 'thumbnail': 'thumbs/%(title).100s.%(ext)s'},
-                    'format': fmt,
+                    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
                     'merge_output_format': 'mp4',
                     'remux_video': 'mp4',
                     'writethumbnail': True,
