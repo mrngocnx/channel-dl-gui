@@ -257,8 +257,14 @@ class ChannelDLApp(ctk.CTk):
                 import yt_dlp
             
             try:
+                video_dir = os.path.join(output, 'videos')
+                thumb_dir = os.path.join(output, 'thumbs')
+                Path(video_dir).mkdir(parents=True, exist_ok=True)
+                Path(thumb_dir).mkdir(parents=True, exist_ok=True)
+                
                 ydl_opts = {
-                    'outtmpl': os.path.join(output, '%(title).100s.%(ext)s'),
+                    'outtmpl': {'default': os.path.join(video_dir, '%(title).100s.%(ext)s'),
+                                'thumbnail': os.path.join(thumb_dir, '%(title).100s.%(ext)s')},
                     'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
                     'merge_output_format': 'mp4',
                     'writethumbnail': True,
@@ -273,7 +279,19 @@ class ChannelDLApp(ctk.CTk):
                 }
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url])
+                    info = ydl.extract_info(url, download=True)
+                    # Tải avatar kênh
+                    try:
+                        if info and 'channel_url' in info:
+                            import urllib.request
+                            avatar = ydl.extract_info(info['channel_url'], download=False)
+                            if avatar and 'thumbnails' in avatar:
+                                av_url = avatar['thumbnails'][-1].get('url', '')
+                                if av_url:
+                                    urllib.request.urlretrieve(av_url, os.path.join(output, 'avatar.jpg'))
+                                    self._ghi_log(f"🖼️ Avatar kênh đã lưu: avatar.jpg", "ok")
+                    except Exception:
+                        pass
 
                 self.after(0, lambda: self._set_tien_do(100, "✅ Đại Công Cáo Thành!"))
                 self.after(0, lambda: self._set_nut("idle"))
