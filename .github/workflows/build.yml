@@ -36,7 +36,7 @@ jobs:
           Copy-Item "$($dir.FullName)/bin/ffmpeg.exe" "ffmpeg.exe"
 
       - name: Build with PyInstaller
-        run: pyinstaller --onefile --windowed --name "ChannelDL" --add-data "ffmpeg.exe;." --collect-all "customtkinter" --collect-all "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
+        run: pyinstaller --onefile --windowed --name "ChannelDL" --add-data "ffmpeg.exe;." --collect-all "customtkinter" --collect-submodules "yt_dlp" --copy-metadata "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -64,7 +64,7 @@ jobs:
         run: brew install ffmpeg
 
       - name: Build with PyInstaller
-        run: pyinstaller --onefile --windowed --name "ChannelDL" --collect-all "customtkinter" --collect-all "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
+        run: pyinstaller --onefile --windowed --name "ChannelDL" --collect-all "customtkinter" --collect-submodules "yt_dlp" --copy-metadata "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -94,7 +94,7 @@ jobs:
           pip install pyinstaller
 
       - name: Build with PyInstaller
-        run: pyinstaller --onefile --windowed --name "ChannelDL" --collect-all "customtkinter" --collect-all "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
+        run: pyinstaller --onefile --windowed --name "ChannelDL" --collect-all "customtkinter" --collect-submodules "yt_dlp" --copy-metadata "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
