@@ -183,10 +183,12 @@ class App(ctk.CTk):
         self._log(f"📍 {url}")
         self._log(f"📂 {out}")
 
+        # Dùng absolute path + quote để tránh lỗi space
+        out_abs = os.path.abspath(out)
         cmd = [YTDLP,
-            '--paths', f'home:{out}',
-            '--paths', 'video:videos',
-            '--paths', 'thumbnail:thumbs',
+            '-P', f'home:{out_abs}',
+            '-P', f'video:videos',
+            '-P', f'thumbnail:thumbs',
             '-o', '%(title).100s.%(ext)s',
             '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
             '--merge-output-format', 'mp4',
@@ -204,7 +206,10 @@ class App(ctk.CTk):
 
         def run():
             try:
-                self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                startup = subprocess.STARTUPINFO()
+                startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                startup.wShowWindow = subprocess.SW_HIDE
+                self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, startupinfo=startup, creationflags=subprocess.CREATE_NO_WINDOW if sys.platform=='win32' else 0)
                 for line in iter(self.proc.stdout.readline, ''):
                     if not self.running:
                         self.proc.kill(); break
