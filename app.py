@@ -334,6 +334,17 @@ class ChannelDLApp(ctk.CTk):
 
         threading.Thread(target=run, daemon=True).start()
 
+    def _tien_trinh(self, d):
+        if d['status'] == 'downloading':
+            pct = d.get('_percent_str', '0%').replace('%','')
+            try: p = float(pct)
+            except: p = 0
+            self.after(0, lambda pp=p: self._set_tien_do(pp, f"📥 Đang tải... {pp:.0f}%"))
+        elif d['status'] == 'finished':
+            self._ghi_log(f"✅ {d.get('filename','?')}")
+        elif d['status'] == 'error':
+            self._ghi_log(f"❌ {d.get('filename','?')}: {d.get('error','?')}")
+
     def _tam_dung(self):
         self.paused = True
         self._set_ui_state("paused")
