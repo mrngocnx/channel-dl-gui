@@ -108,8 +108,17 @@ class ChannelDLApp(ctk.CTk):
         self.prog_label.pack(anchor="w", padx=10, pady=(0, 10))
 
         # ── Log ──
-        ctk.CTkLabel(main, text="📜 Nhật Ký:", font=ctk.CTkFont(size=13, weight="bold")).pack(anchor="w")
-        self.log_text = ctk.CTkTextbox(main, height=200, font=ctk.CTkFont(family="Consolas", size=12))
+        log_frame = ctk.CTkFrame(main)
+        log_frame.pack(fill="both", expand=True, pady=(4, 0))
+        
+        log_header = ctk.CTkFrame(log_frame, fg_color="transparent", height=30)
+        log_header.pack(fill="x")
+        ctk.CTkLabel(log_header, text="📜 Nhật Ký:", font=ctk.CTkFont(size=13, weight="bold")).pack(side="left")
+        ctk.CTkButton(log_header, text="🗑️ Xóa", width=60, height=22, font=ctk.CTkFont(size=10),
+                       command=self._xoa_nhat_ky).pack(side="right", padx=(0, 4))
+        
+        self.log_text = ctk.CTkTextbox(log_frame, height=180, font=ctk.CTkFont(family="Consolas", size=12), 
+                                        state="disabled")
         self.log_text.pack(fill="both", expand=True, pady=(4, 0))
 
         self.status_var = ctk.StringVar(value="Sẵn sàng 🐲")
@@ -144,6 +153,12 @@ class ChannelDLApp(ctk.CTk):
                 except queue.Empty: break
             self.after_id = self.after(100, poll)
         poll()
+
+    def _xoa_nhat_ky(self):
+        self.log_text.configure(state="normal")
+        self.log_text.delete("1.0", "end")
+        self.log_text.configure(state="disabled")
+        self._ghi_log("📋 Nhật ký đã xóa", "info")
 
     def _set_nut(self, state):
         if state == "idle":
