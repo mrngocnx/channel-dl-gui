@@ -5,10 +5,6 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version tag'
-        required: false
 
 jobs:
   build-windows:
@@ -27,80 +23,122 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Download FFmpeg
+      - name: Get yt-dlp path
+        id: ytdlp
+        run: echo "path=$(python -c 'import yt_dlp; print(yt_dlp.__path__[0])')" >> $env:GITHUB_OUTPUT
+
+      - name: Get Python path
+        id: py
+        run: echo "path=$(python -c 'import sys; print(sys.exec_prefix)')" >> $env:GITHUB_OUTPUT
+
+      - name: Build with PyInstaller (onedir)
+        run: |
+          pyinstaller --onedir --windowed --name "ChannelDL" --add-data "ffmpeg.exe;." --collect-all "customtkinter" --collect-submodules "yt_dlp" --collect-all "yt_dlp" --copy-metadata "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
+
+      - name: Create installer with Inno Setup
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "ffmpeg.zip"
-          Expand-Archive -Path "ffmpeg.zip" -DestinationPath "."
-          $dir = Get-ChildItem -Directory "ffmpeg-*" | Select-Object -First 1
-          Copy-Item "$($dir.FullName)/bin/ffmpeg.exe" "ffmpeg.exe"
-
-      - name: Build with PyInstaller
-        run: pyinstaller --onefile --windowed --name "ChannelDL" --add-data "ffmpeg.exe;." --collect-all "customtkinter" --collect-submodules "yt_dlp" --collect-all "yt_dlp" --copy-metadata "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
+          # Download Inno Setup portable
+          Invoke-WebRequest -Uri "https://jrsoftware.org/download.php/is.exe" -OutFile "$env:TEMP\innosetup.exe"
+          Start-Process -Wait -FilePath "$env:TEMP\innosetup.exe" -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=$env:TEMP\is"
+          
+          # Create setup script
+          $script = @"
+          [Setup]
+          AppName=Channel Downloader
+          AppVersion=1.0
+          DefaultDirName={autopf}\ChannelDL
+          DefaultGroupName=Channel Downloader
+          OutputDir=.
+          OutputBaseFilename=ChannelDL-Setup-1.0
+          Compression=lzma2
+          SolidCompression=yes
+          UninstallDisplayIcon={app}\ChannelDL.exe
+          
+          [Languages]
+          Name: "vietnamese"; MessagesFile: "compiler:Default.isl"
+          
+          [Files]
+          Source: "dist\ChannelDL\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+          
+          [Icons]
+          Name: "{group}\Channel Downloader"; Filename: "{app}\ChannelDL.exe"
+          Name: "{group}\Uninstall"; Filename: "{uninstallexe}"
+          Name: "{commondesktop}\Channel Downloader"; Filename: "{app}\ChannelDL.exe"
+          
+          [Run]
+          Filename: "{app}\ChannelDL.exe"; Description: "Chạy Channel Downloader"; Flags: postinstall nowait skipifsilent
+          "@
+          
+          Set-Content -Path "$env:TEMP\setup.iss" -Value $script
+          
+          # Build installer
+          & "$env:TEMP\is\ISCC.exe" "$env:TEMP\setup.iss"
+          
+          # Rename output
+          Move-Item -Path "ChannelDL-Setup-1.0.exe" -Destination "dist\ChannelDL-Setup.exe" -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ChannelDL-Windows
-          path: dist/ChannelDL.exe
+          path: dist/ChannelDL-Setup.exe
 
   build-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
-      - name: Install dependencies
+      - name: Install deps
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
-
-      - name: Install FFmpeg
-        run: brew install ffmpeg
-
-      - name: Build with PyInstaller
-        run: pyinstaller --onefile --windowed --name "ChannelDL" --collect-all "customtkinter" --collect-submodules "yt_dlp" --collect-all "yt_dlp" --copy-metadata "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
-
-      - name: Upload artifact
+          brew install ffmpeg
+      - name: Build
+        run: pyinstaller --onedir --windowed --name "ChannelDL" --collect-all "customtkinter" --collect-submodules "yt_dlp" --collect-all "yt_dlp" --copy-metadata "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
+      - name: Create DMG
+        run: |
+          brew install create-dmg
+          create-dmg --overwrite --dmg-title="ChannelDL" dist/ChannelDL.dmg dist/ChannelDL
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: ChannelDL-macOS
-          path: dist/ChannelDL
+          path: dist/ChannelDL.dmg
 
   build-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
-      - name: Install system deps
+      - name: Install deps
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq python3-tk ffmpeg
-
-      - name: Install Python deps
-        run: |
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
-
-      - name: Build with PyInstaller
-        run: pyinstaller --onefile --windowed --name "ChannelDL" --collect-all "customtkinter" --collect-submodules "yt_dlp" --collect-all "yt_dlp" --copy-metadata "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
-
-      - name: Upload artifact
+      - name: Build
+        run: pyinstaller --onedir --windowed --name "ChannelDL" --collect-all "customtkinter" --collect-submodules "yt_dlp" --collect-all "yt_dlp" --copy-metadata "yt_dlp" --hidden-import "yt_dlp" --hidden-import "yt_dlp.extractor" --hidden-import "yt_dlp.downloader" --hidden-import "yt_dlp.postprocessor" --hidden-import "certifi" --hidden-import "PIL._tkinter_finder" --collect-all "yt_dlp.extractor" --noconfirm app.py
+      - name: Create AppImage
+        run: |
+          wget -q "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage" -O /tmp/appimagetool
+          chmod +x /tmp/appimagetool
+          mkdir -p dist/ChannelDL.AppDir/usr/bin
+          cp -r dist/ChannelDL/* dist/ChannelDL.AppDir/usr/bin/
+          /tmp/appimagetool dist/ChannelDL.AppDir
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: ChannelDL-Linux
-          path: dist/ChannelDL
+          path: dist/ChannelDL*.AppImage
 
   release:
     needs: [build-windows, build-macos, build-linux]
@@ -108,40 +146,28 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           path: artifacts
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: "Channel Downloader ${{ github.ref_name }}"
           body: |
-            ## 🎬 Channel Downloader GUI ${{ github.ref_name }}
-
-            ### Tính năng:
-            - ✅ Tải toàn bộ video từ kênh YouTube / TikTok
-            - ✅ Tự động chọn chất lượng cao nhất (best video + audio → MP4)
-            - ✅ Nhúng metadata + thumbnail vào file
-            - ✅ Bỏ qua video đã tải (archive)
-            - ✅ Giới hạn số lượng, lọc theo ngày
-            - ✅ Progress bar + log real-time
+            ## 🎬 Channel Downloader GUI
 
             ### 📥 Tải về:
-            - 🪟 **Windows**: `ChannelDL.exe \
-            - 🍎 **macOS**: `ChannelDL \
-            - 🐧 **Linux**: `ChannelDL \
+            - 🪟 **Windows**: `ChannelDL-Setup.exe` — chạy file cài đặt, tự động cài app
+            - 🍎 **macOS**: `ChannelDL.dmg`
+            - 🐧 **Linux**: `ChannelDL.AppImage`
+
             ### Hướng dẫn:
-            - **Windows**: Chạy file ChannelDL.exe (có sẵn FFmpeg bên trong)
-            - **macOS**: `chmod +x ChannelDL && ./ChannelDL` (cần cài FFmpeg: `brew install ffmpeg`)
-            - **Linux**: `chmod +x ChannelDL && ./ChannelDL` (cần cài: `sudo apt install ffmpeg python3-tk`)
-          files: |
-            artifacts/ChannelDL-Windows/ChannelDL.exe
-            artifacts/ChannelDL-macOS/ChannelDL
-            artifacts/ChannelDL-Linux/ChannelDL
+            - **Windows**: Tải .exe → chạy → Next → Finish → app tự mở
+            - **macOS**: Mở .dmg → kéo app vào Applications
+            - **Linux**: `chmod +x ChannelDL*.AppImage && ./ChannelDL*.AppImage`
           draft: false
-          prerelease: false
+          files: |
+            artifacts/ChannelDL-Windows/ChannelDL-Setup.exe
+            artifacts/ChannelDL-macOS/ChannelDL.dmg
+            artifacts/ChannelDL-Linux/ChannelDL*.AppImage
