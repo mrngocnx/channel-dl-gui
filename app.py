@@ -167,8 +167,9 @@ class App(ctk.CTk):
             try:
                 import yt_dlp
                 ydl_opts = {
-                    'paths': {'home': out, 'video': 'videos', 'thumbnail': 'thumbs'},
-                    'outtmpl': '%(title).100s.%(ext)s',
+                    'paths': {'home': out},
+                    'outtmpl': {'default': 'videos/%(title).100s.%(ext)s',
+                                'thumbnail': 'thumbs/%(title).100s.%(ext)s'},
                     'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
                     'merge_output_format': 'mp4',
                     'writethumbnail': True, 'embedthumbnail': False,
