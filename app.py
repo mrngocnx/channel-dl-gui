@@ -187,7 +187,12 @@ class ChannelDLApp(ctk.CTk):
                 import yt_dlp
             
             try:
-                ydl_opts = {'quiet': True, 'extract_flat': True, 'dump_single_json': True}
+                ydl_opts = {
+                    'quiet': True,
+                    'extract_flat': 'in_playlist',
+                    'ignoreerrors': True,
+                    'playlistend': None,
+                }
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     try:
                         info = ydl.extract_info(url, download=False)
@@ -198,13 +203,13 @@ class ChannelDLApp(ctk.CTk):
                         return
 
                 entries = info.get('entries', [info]) if info else []
-                entries = [e for e in entries if e]
+                entries = [e for e in entries if e and not e.get('is_live', False) and not e.get('live_status', '') == 'is_live']
                 channel = info.get('channel', info.get('uploader', 'Vô Danh'))
-                total = info.get('playlist_count', info.get('n_entries', len(entries)))
+                total = len(entries)
 
                 self.video_list = entries
                 self._ghi_log(f"🏛️ Chủ: {channel}", "ok")
-                self._ghi_log(f"💎 Tổng: {total} video (thám thính {len(entries)})", "ok")
+                self._ghi_log(f"💎 Tổng cộng: {total} video (đã lọc livestream)", "ok")
 
                 for v in entries[:10]:
                     t = v.get("title","?")
@@ -259,13 +264,14 @@ class ChannelDLApp(ctk.CTk):
                     'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
                     'merge_output_format': 'mp4',
                     'writethumbnail': True,
-                    'embedthumbnail': True,
+                    'embedthumbnail': False,
                     'embedmetadata': True,
                     'addmetadata': True,
                     'download_archive': os.path.join(output, 'archive.txt'),
                     'ignoreerrors': True,
                     'quiet': True,
                     'progress_hooks': [self._tien_trinh],
+                    'match_filter': yt_dlp.utils.match_filter_func('!is_live'),
                 }
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
